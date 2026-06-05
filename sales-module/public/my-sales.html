@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minhas Vendas — CRM</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+</head>
+<body class="bg-slate-100 min-h-screen font-sans">
+
+<!-- ── Top Bar ───────────────────────────────────────────── -->
+<header class="bg-white border-b border-slate-200 sticky top-0 z-10">
+  <div class="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-2.5">
+      <div class="w-8 h-8 bg-teal-500 rounded-lg flex items-center justify-center">
+        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+        </svg>
+      </div>
+      <div>
+        <p class="text-sm font-semibold text-slate-800">Minhas Vendas</p>
+        <p id="user-name" class="text-xs text-slate-400">—</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <select id="filter-period" onchange="load()"
+        class="px-2 py-1.5 text-xs border border-slate-200 rounded-lg bg-white text-slate-600 focus:outline-none focus:ring-1 focus:ring-teal-500">
+        <option value="this_month">Este mês</option>
+        <option value="7d">7 dias</option>
+        <option value="30d">30 dias</option>
+        <option value="today">Hoje</option>
+      </select>
+      <button onclick="logout()" class="text-xs text-slate-400 hover:text-slate-600 px-2 py-1">Sair</button>
+    </div>
+  </div>
+</header>
+
+<div class="max-w-2xl mx-auto px-4 py-6 space-y-5">
+
+  <!-- Saudação -->
+  <div>
+    <h2 id="greeting" class="text-xl font-bold text-slate-900">Olá! 👋</h2>
+    <p id="period-sub" class="text-sm text-slate-500 mt-0.5"></p>
+  </div>
+
+  <!-- Summary cards -->
+  <div class="grid grid-cols-3 gap-3">
+    <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 text-center">
+      <p class="text-xs text-slate-400 font-medium uppercase tracking-wide">Vendido</p>
+      <p id="stat-total" class="text-xl font-bold text-teal-600 mt-1">—</p>
+    </div>
+    <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 text-center">
+      <p class="text-xs text-slate-400 font-medium uppercase tracking-wide">Vendas</p>
+      <p id="stat-count" class="text-xl font-bold text-slate-800 mt-1">—</p>
+    </div>
+    <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 text-center">
+      <p class="text-xs text-slate-400 font-medium uppercase tracking-wide">Ticket</p>
+      <p id="stat-avg" class="text-xl font-bold text-slate-800 mt-1">—</p>
+    </div>
+  </div>
+
+  <!-- Meta progress -->
+  <div id="goal-card" class="hidden bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+    <div class="flex items-center justify-between mb-3">
+      <p class="text-sm font-semibold text-slate-800">Meta do mês</p>
+      <p id="goal-label" class="text-sm font-bold text-teal-600"></p>
+    </div>
+    <div class="w-full bg-slate-100 rounded-full h-2.5 mb-2">
+      <div id="goal-bar" class="bg-teal-500 h-2.5 rounded-full transition-all duration-700" style="width:0%"></div>
+    </div>
+    <p id="goal-pct" class="text-xs text-slate-500"></p>
+  </div>
+
+  <!-- Mini chart -->
+  <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+    <p class="text-sm font-semibold text-slate-800 mb-3">Vendas por dia</p>
+    <div class="relative h-36">
+      <canvas id="my-chart"></canvas>
+    </div>
+  </div>
+
+  <!-- Registrar venda (botão rápido) -->
+  <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-sm font-semibold text-slate-800">Registrar Venda</h3>
+    </div>
+    <div id="quick-err"  class="hidden text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2 mb-3"></div>
+    <div id="quick-ok"   class="hidden text-xs text-green-700 bg-green-50 rounded-lg px-3 py-2 mb-3"></div>
+    <div class="space-y-3">
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-medium text-slate-500 mb-1">Produto *</label>
+          <input id="q-product" type="text" placeholder="Ex: Bússola"
+            class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-500 mb-1">Valor (R$) *</label>
+          <input id="q-amount" type="number" placeholder="0,00" step="0.01" min="0"
+            class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500">
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-medium text-slate-500 mb-1">Data</label>
+          <input id="q-date" type="date"
+            class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-500 mb-1">Obs.</label>
+          <input id="q-notes" type="text" placeholder="Opcional"
+            class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500">
+        </div>
+      </div>
+      <button onclick="quickSale()" id="q-btn"
+        class="w-full bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold py-3 rounded-xl transition">
+        Registrar Venda
+      </button>
+    </div>
+  </div>
+
+  <!-- Histórico -->
+  <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+    <div class="px-5 py-4 border-b border-slate-100">
+      <h3 class="text-sm font-semibold text-slate-800">Histórico recente</h3>
+    </div>
+    <div id="history-list" class="divide-y divide-slate-50">
+      <div class="px-5 py-8 text-center text-sm text-slate-400">Carregando…</div>
+    </div>
+  </div>
+
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+  let myChart = null;
+
+  if (!guardLogin()) { /* redirect */ }
+
+  const user = getUser();
+  document.getElementById('user-name').textContent = user?.name || '';
+  document.getElementById('greeting').textContent = `Olá, ${(user?.name || '').split(' ')[0]}! 👋`;
+  document.getElementById('q-date').value = todayISO();
+
+  function logout() { removeToken(); location.href = '/login.html'; }
+
+  async function load() {
+    const period = document.getElementById('filter-period').value;
+    try {
+      const data = await api('GET', `/dashboard/my-stats?period=${period}`);
+      renderStats(data.stats);
+      renderGoal(data.stats, data.goal);
+      renderChart(data.recent_sales);
+      renderHistory(data.recent_sales);
+      const { start, end } = data.period;
+      document.getElementById('period-sub').textContent = `${fdate(start)} a ${fdate(end)}`;
+    } catch (e) { console.error(e); }
+  }
+
+  function renderStats(s) {
+    document.getElementById('stat-total').textContent = brl(s.total);
+    document.getElementById('stat-count').textContent = s.count;
+    document.getElementById('stat-avg').textContent = brl(s.avg_ticket);
+  }
+
+  function renderGoal(stats, goal) {
+    const card = document.getElementById('goal-card');
+    if (!goal) { card.classList.add('hidden'); return; }
+    card.classList.remove('hidden');
+    const pct = Math.min(100, Math.round((Number(stats.total) / Number(goal.target_amount)) * 100));
+    document.getElementById('goal-label').textContent = brl(goal.target_amount);
+    document.getElementById('goal-bar').style.width = `${pct}%`;
+    document.getElementById('goal-bar').className = `h-2.5 rounded-full transition-all duration-700 ${pct >= 100 ? 'bg-green-500' : pct >= 70 ? 'bg-teal-500' : 'bg-amber-400'}`;
+    document.getElementById('goal-pct').textContent = `${pct}% atingido · faltam ${brl(Math.max(0, Number(goal.target_amount) - Number(stats.total)))}`;
+  }
+
+  function renderChart(sales) {
+    // Group by day
+    const map = {};
+    sales.forEach(s => {
+      const d = s.sale_date?.split('T')[0] || s.sale_date;
+      map[d] = (map[d] || 0) + Number(s.amount);
+    });
+    const keys = Object.keys(map).sort().slice(-14);
+    if (myChart) myChart.destroy();
+    const ctx = document.getElementById('my-chart').getContext('2d');
+    myChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: keys.map(fdate),
+        datasets: [{
+          data: keys.map(k => map[k]),
+          backgroundColor: '#99f6e4',
+          borderColor: '#0d9488',
+          borderWidth: 1.5,
+          borderRadius: 4,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => brl(ctx.raw) } } },
+        scales: {
+          y: { ticks: { callback: v => brl(v) }, grid: { color: '#f8fafc' } },
+          x: { grid: { display: false } },
+        },
+      },
+    });
+  }
+
+  function renderHistory(sales) {
+    const el = document.getElementById('history-list');
+    if (!sales.length) {
+      el.innerHTML = '<div class="px-5 py-8 text-center text-sm text-slate-400">Nenhuma venda registrada ainda</div>';
+      return;
+    }
+    el.innerHTML = sales.map(s => `
+      <div class="flex items-center justify-between px-5 py-3.5 hover:bg-slate-50 transition">
+        <div>
+          <p class="text-sm font-semibold text-slate-800">${s.product}</p>
+          <p class="text-xs text-slate-400 mt-0.5">${fdate(s.sale_date)}${s.contact_name ? ` · ${s.contact_name}` : ''}${s.notes ? ` · ${s.notes}` : ''}</p>
+        </div>
+        <p class="text-sm font-bold text-teal-600 ml-3 whitespace-nowrap">${brl(s.amount)}</p>
+      </div>`).join('');
+  }
+
+  async function quickSale() {
+    const errEl = document.getElementById('quick-err');
+    const okEl  = document.getElementById('quick-ok');
+    const btn   = document.getElementById('q-btn');
+    errEl.classList.add('hidden');
+    okEl.classList.add('hidden');
+
+    const product = document.getElementById('q-product').value.trim();
+    const amount  = parseFloat(document.getElementById('q-amount').value);
+    const date    = document.getElementById('q-date').value;
+    const notes   = document.getElementById('q-notes').value.trim();
+
+    if (!product) { errEl.textContent = 'Informe o produto'; errEl.classList.remove('hidden'); return; }
+    if (!amount || amount <= 0) { errEl.textContent = 'Informe um valor válido'; errEl.classList.remove('hidden'); return; }
+
+    btn.textContent = 'Salvando…';
+    btn.disabled = true;
+    try {
+      await api('POST', '/sales', { product, amount, sale_date: date, notes });
+      okEl.textContent = 'Venda registrada!';
+      okEl.classList.remove('hidden');
+      document.getElementById('q-product').value = '';
+      document.getElementById('q-amount').value = '';
+      document.getElementById('q-notes').value = '';
+      setTimeout(() => okEl.classList.add('hidden'), 2500);
+      load();
+    } catch (e) {
+      errEl.textContent = e.message;
+      errEl.classList.remove('hidden');
+    } finally {
+      btn.textContent = 'Registrar Venda';
+      btn.disabled = false;
+    }
+  }
+
+  load();
+</script>
+</body>
+</html>

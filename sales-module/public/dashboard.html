@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — CRM Vendas</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <style>
+    [x-cloak] { display: none; }
+    .sidebar-link { @apply flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition cursor-pointer text-sm font-medium; }
+    .sidebar-link.active { @apply text-white bg-teal-600; }
+  </style>
+</head>
+<body class="bg-slate-100 min-h-screen flex font-sans">
+
+<!-- ── Sidebar ───────────────────────────────────────────── -->
+<aside class="hidden md:flex flex-col w-60 bg-slate-900 min-h-screen fixed top-0 left-0 z-20 py-6 px-4">
+  <div class="flex items-center gap-3 mb-8 px-2">
+    <div class="w-9 h-9 bg-teal-500 rounded-xl flex items-center justify-center flex-shrink-0">
+      <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+      </svg>
+    </div>
+    <div>
+      <p class="text-white font-semibold text-sm leading-tight">CRM Vendas</p>
+      <p class="text-slate-500 text-xs">Bruno Simplício</p>
+    </div>
+  </div>
+
+  <nav class="space-y-1 flex-1">
+    <a href="/dashboard.html" class="sidebar-link active">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+      </svg>
+      Dashboard
+    </a>
+    <a href="#sales-section" class="sidebar-link">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+      </svg>
+      Todas as vendas
+    </a>
+    <a href="#goals-section" class="sidebar-link">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M13 10V3L4 14h7v7l9-11h-7z"/>
+      </svg>
+      Metas
+    </a>
+  </nav>
+
+  <div class="border-t border-slate-800 pt-4 mt-4">
+    <div class="flex items-center gap-2 px-2 mb-3">
+      <div class="w-8 h-8 bg-teal-700 rounded-full flex items-center justify-center">
+        <span id="avatar-char" class="text-white text-xs font-bold">B</span>
+      </div>
+      <div>
+        <p id="sidebar-name" class="text-white text-xs font-medium">—</p>
+        <p class="text-slate-500 text-xs">Administrador</p>
+      </div>
+    </div>
+    <button onclick="logout()"
+      class="w-full flex items-center gap-2 px-4 py-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-xl transition text-sm">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+      </svg>
+      Sair
+    </button>
+  </div>
+</aside>
+
+<!-- ── Main Content ──────────────────────────────────────── -->
+<main class="flex-1 md:ml-60 p-4 md:p-8 max-w-full">
+
+  <!-- Header -->
+  <div class="flex flex-wrap items-center justify-between gap-4 mb-8">
+    <div>
+      <h1 class="text-2xl font-bold text-slate-900">Dashboard</h1>
+      <p id="period-label" class="text-sm text-slate-500 mt-0.5"></p>
+    </div>
+    <!-- Filtros -->
+    <div class="flex flex-wrap gap-2">
+      <select id="filter-period" onchange="applyFilters()"
+        class="px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500 shadow-sm">
+        <option value="this_month">Este mês</option>
+        <option value="today">Hoje</option>
+        <option value="7d">Últimos 7 dias</option>
+        <option value="30d">Últimos 30 dias</option>
+        <option value="custom">Personalizado</option>
+      </select>
+      <div id="custom-dates" class="hidden flex gap-2">
+        <input type="date" id="filter-start" onchange="applyFilters()"
+          class="px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 shadow-sm">
+        <input type="date" id="filter-end" onchange="applyFilters()"
+          class="px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 shadow-sm">
+      </div>
+      <button onclick="loadDashboard()"
+        class="px-4 py-2 bg-teal-600 text-white text-sm font-medium rounded-xl hover:bg-teal-700 transition shadow-sm">
+        Atualizar
+      </button>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+      <p class="text-xs font-medium text-slate-400 uppercase tracking-wide">Total Vendido</p>
+      <p id="card-total" class="text-2xl font-bold text-slate-900 mt-1">R$ —</p>
+      <p id="card-count" class="text-xs text-slate-400 mt-1"></p>
+    </div>
+    <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+      <p class="text-xs font-medium text-slate-400 uppercase tracking-wide">Ticket Médio</p>
+      <p id="card-avg" class="text-2xl font-bold text-slate-900 mt-1">R$ —</p>
+    </div>
+    <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+      <p class="text-xs font-medium text-slate-400 uppercase tracking-wide">Nº de Vendas</p>
+      <p id="card-num" class="text-2xl font-bold text-slate-900 mt-1">—</p>
+    </div>
+    <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+      <p class="text-xs font-medium text-slate-400 uppercase tracking-wide">Top Vendedora</p>
+      <p id="card-top" class="text-lg font-bold text-teal-600 mt-1">—</p>
+    </div>
+  </div>
+
+  <!-- Ranking + Produto Charts -->
+  <div class="grid lg:grid-cols-2 gap-6 mb-8">
+
+    <!-- Ranking -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+      <div class="px-6 py-4 border-b border-slate-100">
+        <h2 class="text-base font-semibold text-slate-800">Ranking de Atendentes</h2>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <thead>
+            <tr class="text-xs font-medium text-slate-400 uppercase tracking-wide bg-slate-50">
+              <th class="px-6 py-3 text-left">#</th>
+              <th class="px-6 py-3 text-left">Nome</th>
+              <th class="px-6 py-3 text-right">Vendas</th>
+              <th class="px-6 py-3 text-right">Total</th>
+              <th class="px-6 py-3 text-right">Ticket Médio</th>
+            </tr>
+          </thead>
+          <tbody id="ranking-body">
+            <tr><td colspan="5" class="px-6 py-8 text-center text-sm text-slate-400">Carregando…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Por Produto -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+      <h2 class="text-base font-semibold text-slate-800 mb-4">Vendas por Produto</h2>
+      <div class="relative h-56">
+        <canvas id="product-chart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vendas diárias -->
+  <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-8">
+    <h2 class="text-base font-semibold text-slate-800 mb-4">Evolução Diária</h2>
+    <div class="relative h-56">
+      <canvas id="daily-chart"></canvas>
+    </div>
+  </div>
+
+  <!-- ── Seção: Todas as vendas ────────────────────────── -->
+  <div id="sales-section" class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden mb-8">
+    <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+      <h2 class="text-base font-semibold text-slate-800">Todas as Vendas</h2>
+      <button onclick="loadSales()" class="text-xs text-teal-600 hover:text-teal-700 font-medium">Recarregar</button>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead>
+          <tr class="text-xs font-medium text-slate-400 uppercase tracking-wide bg-slate-50">
+            <th class="px-6 py-3 text-left">Data</th>
+            <th class="px-6 py-3 text-left">Produto</th>
+            <th class="px-6 py-3 text-left">Contato</th>
+            <th class="px-6 py-3 text-left">Atendente</th>
+            <th class="px-6 py-3 text-right">Valor</th>
+            <th class="px-6 py-3 text-center">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="sales-body">
+          <tr><td colspan="6" class="px-6 py-8 text-center text-sm text-slate-400">Carregando…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── Seção: Metas ──────────────────────────────────── -->
+  <div id="goals-section" class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-8">
+    <h2 class="text-base font-semibold text-slate-800 mb-4">Definir Meta Mensal</h2>
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+      <div>
+        <label class="block text-xs font-medium text-slate-500 mb-1">ID da Atendente</label>
+        <input id="goal-aid" type="number" placeholder="ID do usuário no Chatwoot"
+          class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500">
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-slate-500 mb-1">Nome</label>
+        <input id="goal-name" type="text" placeholder="Nome da atendente"
+          class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500">
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-slate-500 mb-1">Meta (R$)</label>
+        <input id="goal-amount" type="number" placeholder="5000"
+          class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500">
+      </div>
+      <div class="flex items-end">
+        <button onclick="saveGoal()"
+          class="w-full py-2 bg-teal-600 text-white text-sm font-medium rounded-xl hover:bg-teal-700 transition">
+          Salvar Meta
+        </button>
+      </div>
+    </div>
+    <div id="goal-msg" class="hidden text-sm"></div>
+  </div>
+
+</main>
+
+<!-- Delete confirmation modal -->
+<div id="del-modal" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+  <div class="bg-white rounded-2xl p-6 shadow-xl max-w-sm w-full mx-4">
+    <h3 class="text-base font-semibold text-slate-800 mb-2">Excluir venda?</h3>
+    <p class="text-sm text-slate-500 mb-5">Esta ação não pode ser desfeita.</p>
+    <div class="flex gap-3">
+      <button onclick="document.getElementById('del-modal').classList.add('hidden')"
+        class="flex-1 py-2 text-sm bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-200 transition">
+        Cancelar
+      </button>
+      <button id="del-confirm" class="flex-1 py-2 text-sm bg-red-600 text-white rounded-xl hover:bg-red-700 transition font-medium">
+        Excluir
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+  let productChart = null, dailyChart = null;
+  let currentFilters = {};
+
+  // ── Auth guard ────────────────────────────────────────────
+  if (!guardLogin()) { /* redirect */ }
+  if (!guardAdmin()) { /* redirect */ }
+
+  const user = getUser();
+  document.getElementById('sidebar-name').textContent = user?.name || '';
+  document.getElementById('avatar-char').textContent = (user?.name || 'A')[0].toUpperCase();
+
+  function logout() { removeToken(); location.href = '/login.html'; }
+
+  // ── Filtros ───────────────────────────────────────────────
+  function applyFilters() {
+    const period = document.getElementById('filter-period').value;
+    const customEl = document.getElementById('custom-dates');
+    if (period === 'custom') {
+      customEl.classList.remove('hidden');
+    } else {
+      customEl.classList.add('hidden');
+    }
+    currentFilters = {
+      period,
+      start_date: document.getElementById('filter-start').value,
+      end_date: document.getElementById('filter-end').value,
+    };
+  }
+
+  document.getElementById('filter-period').addEventListener('change', applyFilters);
+
+  // ── Load dashboard ────────────────────────────────────────
+  async function loadDashboard() {
+    applyFilters();
+    const qs = new URLSearchParams(currentFilters).toString();
+    try {
+      const data = await api('GET', `/dashboard/summary?${qs}`);
+      renderCards(data.summary, data.ranking);
+      renderRanking(data.ranking);
+      renderProductChart(data.by_product);
+      renderDailyChart(data.daily);
+      const { start, end } = data.period;
+      document.getElementById('period-label').textContent = `${fdate(start)} a ${fdate(end)}`;
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  function renderCards(s, ranking) {
+    document.getElementById('card-total').textContent = brl(s.total);
+    document.getElementById('card-count').textContent = `${s.count} venda${s.count != 1 ? 's' : ''}`;
+    document.getElementById('card-avg').textContent = brl(s.avg_ticket);
+    document.getElementById('card-num').textContent = s.count;
+    document.getElementById('card-top').textContent = ranking[0]?.attendant_name || '—';
+  }
+
+  const MEDAL = ['🥇','🥈','🥉'];
+  function renderRanking(rows) {
+    const tbody = document.getElementById('ranking-body');
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-sm text-slate-400">Nenhuma venda no período</td></tr>';
+      return;
+    }
+    tbody.innerHTML = rows.map((r, i) => `
+      <tr class="border-t border-slate-50 hover:bg-slate-50 transition">
+        <td class="px-6 py-4 text-sm">${MEDAL[i] || i+1}</td>
+        <td class="px-6 py-4 text-sm font-medium text-slate-800">${r.attendant_name}</td>
+        <td class="px-6 py-4 text-sm text-right text-slate-600">${r.count}</td>
+        <td class="px-6 py-4 text-sm text-right font-semibold text-teal-600">${brl(r.total)}</td>
+        <td class="px-6 py-4 text-sm text-right text-slate-500">${brl(r.avg_ticket)}</td>
+      </tr>`).join('');
+  }
+
+  function renderProductChart(rows) {
+    if (productChart) productChart.destroy();
+    const ctx = document.getElementById('product-chart').getContext('2d');
+    const colors = ['#0d9488','#0891b2','#7c3aed','#db2777','#f59e0b','#84cc16','#14b8a6','#6366f1','#ec4899','#f97316'];
+    productChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: rows.map(r => r.product.length > 20 ? r.product.slice(0,20)+'…' : r.product),
+        datasets: [{
+          data: rows.map(r => Number(r.total)),
+          backgroundColor: colors.slice(0, rows.length),
+          borderRadius: 6,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => brl(ctx.raw) } } },
+        scales: {
+          y: { ticks: { callback: v => brl(v) }, grid: { color: '#f1f5f9' } },
+          x: { grid: { display: false } },
+        },
+      },
+    });
+  }
+
+  function renderDailyChart(rows) {
+    if (dailyChart) dailyChart.destroy();
+    const ctx = document.getElementById('daily-chart').getContext('2d');
+    dailyChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: rows.map(r => fdate(r.sale_date)),
+        datasets: [{
+          label: 'Valor total',
+          data: rows.map(r => Number(r.total)),
+          borderColor: '#0d9488',
+          backgroundColor: 'rgba(13,148,136,0.08)',
+          fill: true,
+          tension: 0.4,
+          pointRadius: 4,
+          pointBackgroundColor: '#0d9488',
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => brl(ctx.raw) } },
+        },
+        scales: {
+          y: { ticks: { callback: v => brl(v) }, grid: { color: '#f1f5f9' } },
+          x: { grid: { display: false } },
+        },
+      },
+    });
+  }
+
+  // ── Load sales list ───────────────────────────────────────
+  async function loadSales() {
+    const qs = new URLSearchParams(currentFilters).toString();
+    try {
+      const { sales } = await api('GET', `/sales?${qs}&limit=100`);
+      const tbody = document.getElementById('sales-body');
+      if (!sales.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-8 text-center text-sm text-slate-400">Nenhuma venda encontrada</td></tr>';
+        return;
+      }
+      tbody.innerHTML = sales.map(s => `
+        <tr class="border-t border-slate-50 hover:bg-slate-50 transition">
+          <td class="px-6 py-3 text-sm text-slate-600 whitespace-nowrap">${fdate(s.sale_date)}</td>
+          <td class="px-6 py-3 text-sm font-medium text-slate-800">${s.product}</td>
+          <td class="px-6 py-3 text-sm text-slate-500">${s.contact_name || '—'}</td>
+          <td class="px-6 py-3 text-sm text-slate-600">${s.attendant_name}</td>
+          <td class="px-6 py-3 text-sm font-semibold text-teal-600 text-right whitespace-nowrap">${brl(s.amount)}</td>
+          <td class="px-6 py-3 text-center">
+            <button onclick="confirmDelete(${s.id})"
+              class="text-xs text-red-400 hover:text-red-600 transition px-2 py-1 rounded hover:bg-red-50">
+              Excluir
+            </button>
+          </td>
+        </tr>`).join('');
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  // ── Delete ────────────────────────────────────────────────
+  function confirmDelete(id) {
+    document.getElementById('del-modal').classList.remove('hidden');
+    document.getElementById('del-confirm').onclick = async () => {
+      await api('DELETE', `/sales/${id}`);
+      document.getElementById('del-modal').classList.add('hidden');
+      loadDashboard();
+      loadSales();
+    };
+  }
+
+  // ── Goals ─────────────────────────────────────────────────
+  async function saveGoal() {
+    const msgEl = document.getElementById('goal-msg');
+    try {
+      await api('POST', '/dashboard/goals', {
+        attendant_id: document.getElementById('goal-aid').value,
+        attendant_name: document.getElementById('goal-name').value,
+        target_amount: document.getElementById('goal-amount').value,
+      });
+      msgEl.textContent = 'Meta salva com sucesso!';
+      msgEl.className = 'text-sm text-green-600';
+      msgEl.classList.remove('hidden');
+    } catch (e) {
+      msgEl.textContent = e.message;
+      msgEl.className = 'text-sm text-red-600';
+      msgEl.classList.remove('hidden');
+    }
+    setTimeout(() => msgEl.classList.add('hidden'), 3000);
+  }
+
+  // ── Init ──────────────────────────────────────────────────
+  loadDashboard();
+  loadSales();
+</script>
+</body>
+</html>

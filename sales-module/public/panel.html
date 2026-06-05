@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registrar Venda</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans">
+
+<!-- ── Login inline (quando não autenticado) ───────────── -->
+<div id="auth-view" class="hidden p-4">
+  <div class="flex items-center gap-2 mb-4">
+    <div class="w-7 h-7 bg-teal-500 rounded-lg flex items-center justify-center">
+      <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+      </svg>
+    </div>
+    <span class="text-sm font-semibold text-slate-700">CRM Vendas</span>
+  </div>
+  <p class="text-xs text-slate-500 mb-3">Faça login para registrar vendas nesta conversa.</p>
+  <div class="space-y-2">
+    <input id="auth-email" type="email" placeholder="E-mail"
+      class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal-500 bg-white">
+    <input id="auth-pass" type="password" placeholder="Senha"
+      class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal-500 bg-white">
+    <div id="auth-err" class="hidden text-xs text-red-500"></div>
+    <button onclick="doLogin()"
+      class="w-full bg-teal-600 text-white text-sm font-medium py-2 rounded-lg hover:bg-teal-700 transition">
+      Entrar
+    </button>
+  </div>
+</div>
+
+<!-- ── Painel principal ─────────────────────────────────── -->
+<div id="main-view" class="hidden p-4 space-y-4">
+
+  <!-- Contato / Conversa -->
+  <div class="bg-white rounded-xl border border-slate-200 p-3">
+    <p class="text-xs text-slate-400 uppercase tracking-wide font-medium mb-0.5">Contato</p>
+    <p id="c-name" class="text-sm font-semibold text-slate-800">—</p>
+    <p id="c-conv" class="text-xs text-slate-400"></p>
+  </div>
+
+  <!-- Botão registrar ou formulário -->
+  <div id="btn-area">
+    <button onclick="openForm()"
+      class="w-full bg-teal-600 hover:bg-teal-700 active:scale-95 text-white text-sm font-semibold
+             py-3 rounded-xl transition flex items-center justify-center gap-2 shadow-sm">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+      </svg>
+      Registrar Venda
+    </button>
+  </div>
+
+  <div id="form-area" class="hidden bg-white rounded-xl border border-slate-200 p-4 space-y-3">
+    <h3 class="text-sm font-semibold text-slate-800">Nova Venda</h3>
+
+    <div id="form-err"  class="hidden text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2"></div>
+    <div id="form-ok"   class="hidden text-xs text-green-700 bg-green-50 rounded-lg px-3 py-2"></div>
+
+    <div>
+      <label class="block text-xs font-medium text-slate-500 mb-1">Produto *</label>
+      <input id="f-product" type="text" placeholder="Ex: Bússola, ÉDEN, Sessão Avulsa…"
+        class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal-500">
+    </div>
+    <div>
+      <label class="block text-xs font-medium text-slate-500 mb-1">Valor (R$) *</label>
+      <input id="f-amount" type="number" placeholder="0,00" step="0.01" min="0.01"
+        class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal-500">
+    </div>
+    <div>
+      <label class="block text-xs font-medium text-slate-500 mb-1">Data da venda</label>
+      <input id="f-date" type="date"
+        class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal-500">
+    </div>
+    <div>
+      <label class="block text-xs font-medium text-slate-500 mb-1">Observações</label>
+      <textarea id="f-notes" rows="2" placeholder="Opcional…"
+        class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal-500 resize-none"></textarea>
+    </div>
+    <div class="flex gap-2 pt-1">
+      <button onclick="closeForm()"
+        class="flex-1 py-2 text-sm text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 transition">
+        Cancelar
+      </button>
+      <button onclick="submitSale()" id="save-btn"
+        class="flex-1 py-2 text-sm font-semibold text-white bg-teal-600 rounded-lg hover:bg-teal-700 transition">
+        Salvar
+      </button>
+    </div>
+  </div>
+
+  <!-- Histórico de vendas do contato -->
+  <div>
+    <p class="text-xs font-medium text-slate-400 uppercase tracking-wide mb-2">Vendas deste contato</p>
+    <div id="history" class="space-y-1.5">
+      <p class="text-xs text-slate-400 italic">Nenhuma venda registrada</p>
+    </div>
+  </div>
+
+  <!-- Rodapé -->
+  <div class="flex items-center justify-between pt-2 border-t border-slate-100">
+    <span id="logged-name" class="text-xs text-slate-400"></span>
+    <button onclick="doLogout()" class="text-xs text-slate-400 hover:text-slate-600 transition">Sair</button>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+  let ctxConvId = null, ctxContactId = null, ctxContactName = null;
+
+  // ── Recebe dados do Chatwoot via postMessage ──────────────
+  window.addEventListener('message', ({ data }) => {
+    if (!data || data.type !== 'chatwoot-integration-loaded') return;
+    const { conversation, contact } = data;
+    if (conversation) {
+      ctxConvId = conversation.id;
+      document.getElementById('c-conv').textContent = `Conversa #${conversation.id}`;
+    }
+    if (contact) {
+      ctxContactId = contact.id;
+      ctxContactName = contact.name;
+      document.getElementById('c-name').textContent = contact.name;
+      if (getToken()) loadHistory(contact.id);
+    }
+  });
+
+  // ── Fallback: parâmetros de URL ───────────────────────────
+  const p = new URLSearchParams(location.search);
+  if (p.get('conversation_id')) { ctxConvId = p.get('conversation_id'); document.getElementById('c-conv').textContent = `Conversa #${ctxConvId}`; }
+  if (p.get('contact_id'))      { ctxContactId = p.get('contact_id'); }
+  if (p.get('contact_name'))    { ctxContactName = p.get('contact_name'); document.getElementById('c-name').textContent = ctxContactName; }
+
+  // ── Data padrão ───────────────────────────────────────────
+  document.getElementById('f-date').value = todayISO();
+
+  // ── Init ──────────────────────────────────────────────────
+  function init() {
+    if (getToken()) {
+      document.getElementById('auth-view').classList.add('hidden');
+      document.getElementById('main-view').classList.remove('hidden');
+      document.getElementById('logged-name').textContent = getUser()?.name || '';
+      if (ctxContactId) loadHistory(ctxContactId);
+    } else {
+      document.getElementById('auth-view').classList.remove('hidden');
+      document.getElementById('main-view').classList.add('hidden');
+    }
+  }
+
+  async function doLogin() {
+    const errEl = document.getElementById('auth-err');
+    errEl.classList.add('hidden');
+    try {
+      const d = await api('POST', '/auth/login', {
+        email: document.getElementById('auth-email').value,
+        password: document.getElementById('auth-pass').value,
+      });
+      setToken(d.token);
+      init();
+    } catch (e) {
+      errEl.textContent = e.message;
+      errEl.classList.remove('hidden');
+    }
+  }
+
+  function doLogout() { removeToken(); init(); }
+
+  function openForm() {
+    document.getElementById('btn-area').classList.add('hidden');
+    document.getElementById('form-area').classList.remove('hidden');
+    document.getElementById('f-product').focus();
+  }
+
+  function closeForm() {
+    document.getElementById('form-area').classList.add('hidden');
+    document.getElementById('btn-area').classList.remove('hidden');
+    ['form-err','form-ok'].forEach(id => document.getElementById(id).classList.add('hidden'));
+    ['f-product','f-amount','f-notes'].forEach(id => { document.getElementById(id).value = ''; });
+  }
+
+  async function submitSale() {
+    const errEl = document.getElementById('form-err');
+    const okEl  = document.getElementById('form-ok');
+    errEl.classList.add('hidden');
+    okEl.classList.add('hidden');
+
+    const product = document.getElementById('f-product').value.trim();
+    const amount  = parseFloat(document.getElementById('f-amount').value);
+    const date    = document.getElementById('f-date').value;
+    const notes   = document.getElementById('f-notes').value.trim();
+
+    if (!product) { errEl.textContent = 'Informe o produto'; errEl.classList.remove('hidden'); return; }
+    if (!amount || amount <= 0) { errEl.textContent = 'Informe um valor válido'; errEl.classList.remove('hidden'); return; }
+
+    document.getElementById('save-btn').textContent = 'Salvando…';
+    try {
+      await api('POST', '/sales', {
+        product, amount, sale_date: date, notes,
+        conversation_id: ctxConvId,
+        contact_id: ctxContactId,
+        contact_name: ctxContactName,
+      });
+      okEl.textContent = 'Venda registrada com sucesso!';
+      okEl.classList.remove('hidden');
+      if (ctxContactId) loadHistory(ctxContactId);
+      setTimeout(closeForm, 1800);
+    } catch (e) {
+      errEl.textContent = e.message;
+      errEl.classList.remove('hidden');
+    } finally {
+      document.getElementById('save-btn').textContent = 'Salvar';
+    }
+  }
+
+  async function loadHistory(contactId) {
+    const el = document.getElementById('history');
+    try {
+      const sales = await api('GET', `/sales/contact/${contactId}`);
+      if (!sales.length) {
+        el.innerHTML = '<p class="text-xs text-slate-400 italic">Nenhuma venda registrada</p>';
+        return;
+      }
+      el.innerHTML = sales.map(s => `
+        <div class="flex items-start justify-between bg-white rounded-lg border border-slate-100 px-3 py-2">
+          <div>
+            <p class="text-xs font-semibold text-slate-700">${s.product}</p>
+            <p class="text-xs text-slate-400">${fdate(s.sale_date)} · ${s.attendant_name}</p>
+          </div>
+          <p class="text-xs font-bold text-teal-600 whitespace-nowrap ml-2">${brl(s.amount)}</p>
+        </div>`).join('');
+    } catch {
+      el.innerHTML = '<p class="text-xs text-red-400">Erro ao carregar histórico</p>';
+    }
+  }
+
+  init();
+</script>
+</body>
+</html>
