@@ -11,6 +11,19 @@ router.post('/login', async (req, res) => {
     return res.status(400).json({ error: 'E-mail e senha são obrigatórios' });
   }
 
+  // Admin local — ativo quando CHATWOOT_URL não está configurado ou quando
+  // as variáveis LOCAL_ADMIN_EMAIL/LOCAL_ADMIN_PASSWORD estão definidas
+  const localEmail = process.env.LOCAL_ADMIN_EMAIL;
+  const localPass  = process.env.LOCAL_ADMIN_PASSWORD;
+  if (localEmail && localPass) {
+    if (email === localEmail && password === localPass) {
+      const user = { id: 1, name: 'Admin', email: localEmail, role: 'administrator' };
+      const token = jwt.sign(user, process.env.JWT_SECRET, { expiresIn: '24h' });
+      return res.json({ token, user });
+    }
+    return res.status(401).json({ error: 'E-mail ou senha incorretos' });
+  }
+
   try {
     const response = await axios.post(
       `${process.env.CHATWOOT_URL}/auth/sign_in`,
@@ -18,13 +31,12 @@ router.post('/login', async (req, res) => {
       { headers: { 'Content-Type': 'application/json' } }
     );
 
-    // Chatwoot returns user under data.data.attributes (v2 API)
     const raw = response.data?.data?.attributes ?? response.data?.data ?? response.data;
     const user = {
       id: raw.id,
       name: raw.name,
       email: raw.email,
-      role: raw.role,             // 'administrator' or 'agent'
+      role: raw.role,
       avatar_url: raw.avatar_url,
       chatwoot_token: raw.access_token,
     };
